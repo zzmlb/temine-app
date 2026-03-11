@@ -1,0 +1,16 @@
+node_modules/
+.DS_Store
+*.log
+*.tar.gz
+.env
+.env.*
+.vite/
+out/
+dist/
+
+# Temine 本地数据（含连接凭证）
+.temine/
+~/.temine/
+ssh-connections.json
+ssh-presets.json
+global-recording.json
