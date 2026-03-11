@@ -75,7 +75,7 @@ const settingsAPI = {
 
 const windowAPI = {
   toggleFloatingBar: () => ipcRenderer.send(IPC_CHANNELS.FLOATING_TOGGLE),
-  togglePanel: () => ipcRenderer.send('panel:toggle'),
+  togglePanel: () => ipcRenderer.send(IPC_CHANNELS.PANEL_TOGGLE),
   onShortcut: (channel: string, callback: (...args: any[]) => void) => {
     const handler = (_event: any, ...args: any[]) => callback(...args);
     ipcRenderer.on(channel, handler);

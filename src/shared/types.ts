@@ -38,6 +38,7 @@ export const IPC_CHANNELS = {
   SETTINGS_GET: 'settings:get',
   SETTINGS_SET: 'settings:set',
   THEME_CHANGE: 'theme:change',
+  PANEL_TOGGLE: 'panel:toggle',
 } as const;
 
 // 历史记录

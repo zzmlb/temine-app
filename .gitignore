@@ -8,6 +8,11 @@ node_modules/
 out/
 dist/
 
+# 独立子仓库（各自有独立 git）
+temine-cli/
+temine-app/
+rectangle-ref/
+
 # Temine 本地数据（含连接凭证）
 .temine/
 ~/.temine/

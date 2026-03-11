@@ -1,5 +1,6 @@
 import { BrowserWindow } from 'electron';
-import { execSync, spawn } from 'child_process';
+import { spawn } from 'child_process';
+import { request } from 'http';
 import type { ChildProcess } from 'child_process';
 
 const PANEL_PORT = 7890;
@@ -9,27 +10,28 @@ export class PanelManager {
   private window: BrowserWindow | null = null;
   private serverProcess: ChildProcess | null = null;
 
-  /** 探测 panel 服务是否在运行 */
-  isPanelRunning(): boolean {
-    try {
-      execSync(`curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 ${PANEL_URL}`, {
-        encoding: 'utf-8',
-        timeout: 5000,
+  /** 异步探测 panel 服务是否在运行（不阻塞主进程） */
+  isPanelRunning(): Promise<boolean> {
+    return new Promise((resolve) => {
+      const req = request(PANEL_URL, { method: 'GET', timeout: 2000 }, (res) => {
+        res.resume(); // 消费响应体防止内存泄漏
+        resolve(res.statusCode === 200);
       });
-      return true;
-    } catch {
-      return false;
-    }
+      req.on('error', () => resolve(false));
+      req.on('timeout', () => { req.destroy(); resolve(false); });
+      req.end();
+    });
   }
 
   /** 启动 panel 后台服务 */
-  startPanelServer(): void {
-    if (this.isPanelRunning()) return;
+  async startPanelServer(): Promise<void> {
+    if (await this.isPanelRunning()) return;
     try {
-      // 使用 npx temine panel 或直接调用 node
+      // 跨平台兼容：使用 shell:true 让系统自动解析 npx（Windows 上需 npx.cmd）
       this.serverProcess = spawn('npx', ['temine', 'panel'], {
         detached: true,
         stdio: 'ignore',
+        shell: true,
         env: { ...process.env },
       });
       this.serverProcess.unref();
@@ -47,12 +49,16 @@ export class PanelManager {
     }
 
     // 确保 panel 服务在运行
-    if (!this.isPanelRunning()) {
-      this.startPanelServer();
+    if (!(await this.isPanelRunning())) {
+      await this.startPanelServer();
       // 等待服务启动（最多 5 秒）
+      let started = false;
       for (let i = 0; i < 10; i++) {
         await new Promise((r) => setTimeout(r, 500));
-        if (this.isPanelRunning()) break;
+        if (await this.isPanelRunning()) { started = true; break; }
+      }
+      if (!started) {
+        // 服务未启动，仍然尝试打开窗口（用户可能手动启动）
       }
     }
 

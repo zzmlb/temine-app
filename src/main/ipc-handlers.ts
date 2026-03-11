@@ -103,7 +103,7 @@ export function registerIpcHandlers(services: Services) {
   });
 
   // 控制面板切换
-  ipcMain.on('panel:toggle', () => {
+  ipcMain.on(IPC_CHANNELS.PANEL_TOGGLE, () => {
     panelManager.toggle();
   });
 
