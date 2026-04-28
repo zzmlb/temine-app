@@ -4,6 +4,7 @@ import Toolbar from './components/layout/Toolbar';
 import HistoryPanel from './components/history/HistoryPanel';
 import SettingsPanel from './components/settings/SettingsPanel';
 import FloatingBar from './floating-bar/FloatingBar';
+import FloatingButton from './floating-button/FloatingButton';
 import { useTerminalStore } from './stores/terminal-store';
 import { useLayoutStore } from './stores/layout-store';
 import { useThemeStore, THEME_VARS } from './stores/theme-store';
@@ -19,6 +20,7 @@ const App: React.FC = () => {
   const theme = useThemeStore((s) => s.theme);
 
   const isFloating = window.location.hash === '#/floating';
+  const isFloatingButton = window.location.hash === '#/floating-button';
 
   // 初始化主题
   useEffect(() => {
@@ -31,7 +33,7 @@ const App: React.FC = () => {
 
   // 启动时自动创建一个终端
   useEffect(() => {
-    if (isFloating) return;
+    if (isFloating || isFloatingButton) return;
     if (Object.keys(terminals).length > 0) return;
     handleNewTerminal();
   }, []);
@@ -73,7 +75,7 @@ const App: React.FC = () => {
 
   // 注册快捷键监听
   useEffect(() => {
-    if (isFloating) return;
+    if (isFloating || isFloatingButton) return;
 
     const unsubs = [
       window.windowAPI.onShortcut('shortcut:newTerminal', handleNewTerminal),
@@ -88,6 +90,10 @@ const App: React.FC = () => {
 
   if (isFloating) {
     return <FloatingBar />;
+  }
+
+  if (isFloatingButton) {
+    return <FloatingButton />;
   }
 
   return (

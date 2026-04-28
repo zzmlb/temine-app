@@ -76,6 +76,7 @@ const settingsAPI = {
 const windowAPI = {
   toggleFloatingBar: () => ipcRenderer.send(IPC_CHANNELS.FLOATING_TOGGLE),
   togglePanel: () => ipcRenderer.send(IPC_CHANNELS.PANEL_TOGGLE),
+  toggleFloatingButton: () => ipcRenderer.send(IPC_CHANNELS.FLOATING_BUTTON_TOGGLE),
   onShortcut: (channel: string, callback: (...args: any[]) => void) => {
     const handler = (_event: any, ...args: any[]) => callback(...args);
     ipcRenderer.on(channel, handler);
@@ -83,12 +84,22 @@ const windowAPI = {
   },
 };
 
+const floatingButtonAPI = {
+  click: () => ipcRenderer.send(IPC_CHANNELS.FLOATING_BUTTON_CLICK),
+  hide: () => ipcRenderer.send(IPC_CHANNELS.FLOATING_BUTTON_HIDE),
+  dragStart: () => ipcRenderer.send(IPC_CHANNELS.FLOATING_BUTTON_DRAG_START),
+  dragMove: () => ipcRenderer.send(IPC_CHANNELS.FLOATING_BUTTON_DRAG_MOVE),
+  dragEnd: () => ipcRenderer.send(IPC_CHANNELS.FLOATING_BUTTON_DRAG_END),
+};
+
 contextBridge.exposeInMainWorld('terminalAPI', terminalAPI);
 contextBridge.exposeInMainWorld('historyAPI', historyAPI);
 contextBridge.exposeInMainWorld('settingsAPI', settingsAPI);
 contextBridge.exposeInMainWorld('windowAPI', windowAPI);
+contextBridge.exposeInMainWorld('floatingButtonAPI', floatingButtonAPI);
 
 export type TerminalAPI = typeof terminalAPI;
 export type HistoryAPI = typeof historyAPI;
 export type SettingsAPI = typeof settingsAPI;
 export type WindowAPI = typeof windowAPI;
+export type FloatingButtonAPI = typeof floatingButtonAPI;

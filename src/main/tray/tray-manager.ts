@@ -1,5 +1,6 @@
 import { Tray, Menu, nativeImage, BrowserWindow } from 'electron';
 import type { AiState } from '../../shared/types';
+import type { FloatingButtonManager } from '../floating-button/floating-button-manager';
 
 const STATE_COLORS: Record<AiState, string> = {
   idle: '#888888',
@@ -21,10 +22,12 @@ function createTrayIcon(color: string): Electron.NativeImage {
 export class TrayManager {
   private tray: Tray | null = null;
   private mainWindow: BrowserWindow;
+  private floatingButtonManager: FloatingButtonManager | null;
   private sessionStates = new Map<string, AiState>();
 
-  constructor(mainWindow: BrowserWindow) {
+  constructor(mainWindow: BrowserWindow, floatingButtonManager?: FloatingButtonManager) {
     this.mainWindow = mainWindow;
+    this.floatingButtonManager = floatingButtonManager ?? null;
     this.createTray();
   }
 
@@ -46,8 +49,19 @@ export class TrayManager {
           this.mainWindow.focus();
         },
       },
-      { type: 'separator' },
     ];
+
+    if (this.floatingButtonManager) {
+      menuItems.push({
+        label: this.floatingButtonManager.isVisible() ? '隐藏悬浮按钮' : '显示悬浮按钮',
+        click: () => {
+          this.floatingButtonManager?.toggle();
+          this.updateMenu();
+        },
+      });
+    }
+
+    menuItems.push({ type: 'separator' });
 
     // 添加各终端状态
     for (const [id, state] of this.sessionStates) {

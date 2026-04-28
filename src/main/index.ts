@@ -6,6 +6,7 @@ import { AiStateDetector } from './detection/ai-state-detector';
 import { NotificationManager } from './notification/notification-manager';
 import { TrayManager } from './tray/tray-manager';
 import { FloatingBarManager } from './floating-bar/floating-bar-manager';
+import { FloatingButtonManager } from './floating-button/floating-button-manager';
 import { SessionLogger } from './database/session-logger';
 import { PanelManager } from './panel/panel-manager';
 
@@ -19,6 +20,7 @@ let aiStateDetector: AiStateDetector;
 let notificationManager: NotificationManager;
 let trayManager: TrayManager;
 let floatingBarManager: FloatingBarManager;
+let floatingButtonManager: FloatingButtonManager;
 let sessionLogger: SessionLogger;
 let panelManager: PanelManager;
 
@@ -61,9 +63,13 @@ app.whenReady().then(() => {
 
   const win = createMainWindow();
 
-  trayManager = new TrayManager(win);
+  floatingButtonManager = new FloatingButtonManager();
+  trayManager = new TrayManager(win, floatingButtonManager);
   floatingBarManager = new FloatingBarManager(win);
   panelManager = new PanelManager();
+
+  // 默认显示悬浮按钮（除非用户上次手动隐藏）
+  floatingButtonManager.restore();
 
   // 注册 IPC 处理器
   registerIpcHandlers({
@@ -72,6 +78,7 @@ app.whenReady().then(() => {
     notificationManager,
     trayManager,
     floatingBarManager,
+    floatingButtonManager,
     sessionLogger,
     panelManager,
     getMainWindow: () => mainWindow,
@@ -173,6 +180,11 @@ app.whenReady().then(() => {
           click: () => floatingBarManager.toggle(),
         },
         {
+          label: '悬浮按钮',
+          accelerator: 'CmdOrCtrl+Shift+B',
+          click: () => floatingButtonManager.toggle(),
+        },
+        {
           label: '打开控制面板',
           accelerator: 'CmdOrCtrl+Shift+P',
           click: () => panelManager.toggle(),
@@ -191,8 +203,12 @@ app.whenReady().then(() => {
   Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
+    // 悬浮按钮也算 BrowserWindow，所以这里检查主窗口本身是否还在
+    if (!mainWindow || mainWindow.isDestroyed()) {
       createMainWindow();
+    } else {
+      mainWindow.show();
+      mainWindow.focus();
     }
   });
 });
@@ -206,6 +222,7 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   ptyManager.destroyAll();
   panelManager.destroy();
+  floatingButtonManager?.destroy();
   sessionLogger.flush();
   sessionLogger.close();
 });

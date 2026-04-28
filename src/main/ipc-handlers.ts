@@ -7,6 +7,7 @@ import type { AiStateDetector } from './detection/ai-state-detector';
 import type { NotificationManager } from './notification/notification-manager';
 import type { TrayManager } from './tray/tray-manager';
 import type { FloatingBarManager } from './floating-bar/floating-bar-manager';
+import type { FloatingButtonManager } from './floating-button/floating-button-manager';
 import type { SessionLogger } from './database/session-logger';
 import type { PanelManager } from './panel/panel-manager';
 
@@ -16,13 +17,21 @@ interface Services {
   notificationManager: NotificationManager;
   trayManager: TrayManager;
   floatingBarManager: FloatingBarManager;
+  floatingButtonManager: FloatingButtonManager;
   sessionLogger: SessionLogger;
   panelManager: PanelManager;
   getMainWindow: () => BrowserWindow | null;
 }
 
 export function registerIpcHandlers(services: Services) {
-  const { ptyManager, sessionLogger, getMainWindow, floatingBarManager, panelManager } = services;
+  const {
+    ptyManager,
+    sessionLogger,
+    getMainWindow,
+    floatingBarManager,
+    floatingButtonManager,
+    panelManager,
+  } = services;
 
   // 创建终端
   ipcMain.handle(IPC_CHANNELS.TERMINAL_CREATE, async (_event, options: CreateTerminalOptions) => {
@@ -105,6 +114,30 @@ export function registerIpcHandlers(services: Services) {
   // 控制面板切换
   ipcMain.on(IPC_CHANNELS.PANEL_TOGGLE, () => {
     panelManager.toggle();
+  });
+
+  // 悬浮按钮：显隐
+  ipcMain.on(IPC_CHANNELS.FLOATING_BUTTON_TOGGLE, () => {
+    floatingButtonManager.toggle();
+  });
+  ipcMain.on(IPC_CHANNELS.FLOATING_BUTTON_HIDE, () => {
+    floatingButtonManager.hide();
+  });
+
+  // 悬浮按钮：点击 → 切换控制面板
+  ipcMain.on(IPC_CHANNELS.FLOATING_BUTTON_CLICK, () => {
+    panelManager.toggle();
+  });
+
+  // 悬浮按钮：拖拽
+  ipcMain.on(IPC_CHANNELS.FLOATING_BUTTON_DRAG_START, () => {
+    floatingButtonManager.dragStart();
+  });
+  ipcMain.on(IPC_CHANNELS.FLOATING_BUTTON_DRAG_MOVE, () => {
+    floatingButtonManager.dragMove();
+  });
+  ipcMain.on(IPC_CHANNELS.FLOATING_BUTTON_DRAG_END, () => {
+    floatingButtonManager.dragEnd();
   });
 
   // 设置
