@@ -537,10 +537,9 @@ body {
 }
 
 /* ==========================================================================
-   悬浮按钮 (FloatingButton)
+   悬浮按钮 (FloatingButton) —— 暗夜玻璃 + 极简霓虹
    ========================================================================== */
 
-/* 悬浮按钮窗口的根 body：完全透明、禁用滚动条、禁用文本选择 */
 body.floating-button-body {
   background: transparent !important;
   overflow: hidden;
@@ -559,65 +558,99 @@ body.floating-button-body #root {
 
 .fb-root {
   position: relative;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
+  width: 56px;
+  height: 56px;
   cursor: grab;
-  transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
-  filter: drop-shadow(0 8px 24px rgba(110, 79, 255, 0.45))
-    drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+  transition: transform 220ms cubic-bezier(0.34, 1.32, 0.64, 1);
 }
 
 .fb-root.is-hover {
-  transform: scale(1.08);
+  transform: scale(1.06);
 }
 
 .fb-root.is-pressed {
   cursor: grabbing;
-  transform: scale(0.95);
+  transform: scale(0.94);
 }
 
-/* 极光弥散背景 —— 旋转的多色径向 */
-.fb-aurora {
+/* 外层柔光 —— 静态、克制 */
+.fb-glow {
   position: absolute;
-  inset: -8px;
-  border-radius: 50%;
+  inset: -10px;
+  border-radius: 22px;
+  background: radial-gradient(
+    circle at 50% 60%,
+    rgba(99, 102, 241, 0.45) 0%,
+    rgba(99, 102, 241, 0.15) 40%,
+    transparent 70%
+  );
+  filter: blur(8px);
+  opacity: 0.7;
+  pointer-events: none;
+  animation: fb-breathe 3.6s ease-in-out infinite;
+}
+
+@keyframes fb-breathe {
+  0%, 100% { opacity: 0.55; transform: scale(0.96); }
+  50% { opacity: 0.85; transform: scale(1.04); }
+}
+
+.fb-root.is-hover .fb-glow {
+  opacity: 1;
+  background: radial-gradient(
+    circle at 50% 60%,
+    rgba(129, 140, 248, 0.6) 0%,
+    rgba(99, 102, 241, 0.2) 45%,
+    transparent 75%
+  );
+}
+
+/* 玻璃主体 —— 圆角方形、深色磨砂 */
+.fb-glass {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
   background:
-    radial-gradient(circle at 30% 30%, rgba(122, 162, 247, 0.55), transparent 55%),
-    radial-gradient(circle at 70% 70%, rgba(255, 92, 196, 0.5), transparent 55%),
-    radial-gradient(circle at 50% 80%, rgba(255, 188, 80, 0.45), transparent 60%);
-  filter: blur(10px);
-  opacity: 0.85;
-  animation: fb-aurora-spin 8s linear infinite;
+    linear-gradient(155deg, rgba(28, 32, 56, 0.92) 0%, rgba(15, 18, 36, 0.96) 100%);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.55),
+    0 2px 6px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+
+/* 玻璃顶部高光带 —— 静态、模拟玻璃厚度 */
+.fb-glass::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 8%;
+  right: 8%;
+  height: 40%;
+  border-radius: 16px 16px 50% 50% / 16px 16px 100% 100%;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.12) 0%,
+    transparent 100%
+  );
   pointer-events: none;
 }
 
-@keyframes fb-aurora-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* 旋转的彩色光环 —— conic 渐变 */
-.fb-ring {
+/* 边缘霓虹描边 —— 双层模拟玻璃折射 */
+.fb-edge {
   position: absolute;
   inset: 0;
-  border-radius: 50%;
-  padding: 2px;
-  background: conic-gradient(
-    from 0deg,
-    #7aa2f7,
-    #bb9af7,
-    #ff7eb6,
-    #ffbc50,
-    #9ece6a,
-    #7dcfff,
-    #7aa2f7
+  border-radius: 16px;
+  padding: 1px;
+  background: linear-gradient(
+    155deg,
+    rgba(129, 140, 248, 0.55) 0%,
+    rgba(99, 102, 241, 0.15) 35%,
+    rgba(192, 132, 252, 0.1) 70%,
+    rgba(236, 72, 153, 0.4) 100%
   );
-  animation: fb-ring-spin 4s linear infinite;
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
@@ -626,89 +659,29 @@ body.floating-button-body #root {
   pointer-events: none;
 }
 
-@keyframes fb-ring-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(-360deg);
-  }
-}
-
-/* 核心球体 —— 玻璃质感渐变 */
-.fb-core {
+/* 内容区 —— 极简 prompt 符号 */
+.fb-content {
   position: absolute;
-  inset: 4px;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.55), transparent 45%),
-    linear-gradient(135deg, #4a3aff 0%, #7c3aed 45%, #ec4899 100%);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    inset 0 -8px 16px rgba(0, 0, 0, 0.35);
-  overflow: hidden;
-}
-
-.fb-core::after {
-  /* 内部脉冲晕 */
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, transparent 60%);
-  animation: fb-pulse 2.4s ease-in-out infinite;
-}
-
-@keyframes fb-pulse {
-  0%, 100% {
-    opacity: 0.4;
-    transform: scale(0.8);
-  }
-  50% {
-    opacity: 0.85;
-    transform: scale(1.05);
-  }
-}
-
-/* 闪电图标 */
-.fb-icon {
-  position: relative;
-  width: 28px;
-  height: 28px;
   z-index: 2;
-  filter: drop-shadow(0 0 6px rgba(255, 224, 102, 0.8));
-  animation: fb-bolt-flicker 3s ease-in-out infinite;
 }
 
-@keyframes fb-bolt-flicker {
-  0%, 100% { filter: drop-shadow(0 0 6px rgba(255, 224, 102, 0.8)); }
-  45% { filter: drop-shadow(0 0 10px rgba(255, 224, 102, 1)); }
-  47% { filter: drop-shadow(0 0 2px rgba(255, 224, 102, 0.4)); }
-  50% { filter: drop-shadow(0 0 14px rgba(255, 188, 80, 1)); }
+.fb-prompt {
+  font-family: 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -1px;
+  background: linear-gradient(135deg, #c7d2fe 0%, #a5b4fc 50%, #f0abfc 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 6px rgba(165, 180, 252, 0.55));
+  transition: filter 220ms ease;
 }
 
-/* 高光扫光 —— hover 时滑过 */
-.fb-shine {
-  position: absolute;
-  inset: 4px;
-  border-radius: 50%;
-  background: linear-gradient(
-    115deg,
-    transparent 35%,
-    rgba(255, 255, 255, 0.45) 50%,
-    transparent 65%
-  );
-  opacity: 0;
-  transform: translateX(-100%);
-  pointer-events: none;
-}
-
-.fb-root.is-hover .fb-shine {
-  opacity: 1;
-  transform: translateX(100%);
-  transition: transform 700ms ease, opacity 200ms ease;
+.fb-root.is-hover .fb-prompt {
+  filter: drop-shadow(0 0 10px rgba(192, 132, 252, 0.85));
 }

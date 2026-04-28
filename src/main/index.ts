@@ -24,7 +24,7 @@ let floatingButtonManager: FloatingButtonManager;
 let sessionLogger: SessionLogger;
 let panelManager: PanelManager;
 
-function createMainWindow() {
+function createMainWindow(autoShow: boolean = false) {
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -32,6 +32,7 @@ function createMainWindow() {
     minHeight: 600,
     title: 'Temine',
     backgroundColor: '#1a1b26',
+    show: autoShow,
     webPreferences: {
       preload: path.join(__dirname, `preload.js`),
       contextIsolation: true,
@@ -47,11 +48,24 @@ function createMainWindow() {
     );
   }
 
-  mainWindow.on('closed', () => {
-    mainWindow = null;
+  // 关闭时只是隐藏，不销毁（保留 PTY 状态等后台逻辑）
+  mainWindow.on('close', (e) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      e.preventDefault();
+      mainWindow.hide();
+    }
   });
 
   return mainWindow;
+}
+
+function showMainWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    createMainWindow(true);
+  } else {
+    mainWindow.show();
+    mainWindow.focus();
+  }
 }
 
 app.whenReady().then(() => {
@@ -170,6 +184,11 @@ app.whenReady().then(() => {
       label: '视图',
       submenu: [
         {
+          label: '显示终端管理器',
+          accelerator: 'CmdOrCtrl+Shift+M',
+          click: () => showMainWindow(),
+        },
+        {
           label: '历史面板',
           accelerator: 'CmdOrCtrl+Shift+H',
           click: () => mainWindow?.webContents.send('shortcut:toggleHistory'),
@@ -202,14 +221,9 @@ app.whenReady().then(() => {
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
 
+  // 点击 Dock 图标：唤出终端管理器主窗口（这是用户主动需要时才显示）
   app.on('activate', () => {
-    // 悬浮按钮也算 BrowserWindow，所以这里检查主窗口本身是否还在
-    if (!mainWindow || mainWindow.isDestroyed()) {
-      createMainWindow();
-    } else {
-      mainWindow.show();
-      mainWindow.focus();
-    }
+    showMainWindow();
   });
 });
 

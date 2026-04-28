@@ -43,10 +43,12 @@ export class TrayManager {
 
     const menuItems: Electron.MenuItemConstructorOptions[] = [
       {
-        label: '显示主窗口',
+        label: '显示终端管理器',
         click: () => {
-          this.mainWindow.show();
-          this.mainWindow.focus();
+          if (!this.mainWindow.isDestroyed()) {
+            this.mainWindow.show();
+            this.mainWindow.focus();
+          }
         },
       },
     ];
