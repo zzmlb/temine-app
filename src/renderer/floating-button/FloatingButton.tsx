@@ -4,7 +4,7 @@ const DRAG_THRESHOLD = 4;
 
 const FloatingButton: React.FC = () => {
   const [pressed, setPressed] = useState(false);
-  const [hovering, setHovering] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const dragStateRef = useRef<{
     startX: number;
     startY: number;
@@ -55,6 +55,17 @@ const FloatingButton: React.FC = () => {
     };
   }, []);
 
+  // 鼠标悬停时展开窗口（通过主进程 setBounds 形变）
+  const handleMouseEnter = () => {
+    setExpanded(true);
+    window.floatingButtonAPI.expand(true);
+  };
+
+  const handleMouseLeave = () => {
+    setExpanded(false);
+    window.floatingButtonAPI.expand(false);
+  };
+
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return;
     dragStateRef.current = {
@@ -74,19 +85,20 @@ const FloatingButton: React.FC = () => {
 
   return (
     <div
-      className={`fb-root ${hovering ? 'is-hover' : ''} ${pressed ? 'is-pressed' : ''}`}
+      className={`fb-island ${expanded ? 'is-expanded' : ''} ${pressed ? 'is-pressed' : ''}`}
       onMouseDown={handleMouseDown}
-      onMouseEnter={() => setHovering(true)}
-      onMouseLeave={() => setHovering(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       onContextMenu={handleContextMenu}
-      title="点击：打开/关闭控制面板\n拖动：移动按钮\n右键：隐藏"
+      title="点击：开/关控制面板\n拖动：移动\n右键：隐藏"
     >
-      <div className="fb-glow" />
-      <div className="fb-glass">
-        <div className="fb-edge" />
-        <div className="fb-content">
-          <span className="fb-prompt">›_</span>
-        </div>
+      <div className="fb-icon">
+        <span className="fb-dot" />
+        <span className="fb-prompt">›_</span>
+      </div>
+      <div className="fb-label">
+        <span className="fb-label-title">Temine</span>
+        <span className="fb-label-sub">点击打开面板</span>
       </div>
     </div>
   );

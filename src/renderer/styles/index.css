@@ -537,7 +537,7 @@ body {
 }
 
 /* ==========================================================================
-   悬浮按钮 (FloatingButton) —— 暗夜玻璃 + 极简霓虹
+   悬浮按钮 (FloatingButton) —— Dynamic Island 灵动岛风格
    ========================================================================== */
 
 body.floating-button-body {
@@ -554,134 +554,129 @@ body.floating-button-body #root {
   align-items: center;
   justify-content: center;
   height: 100vh;
+  width: 100vw;
 }
 
-.fb-root {
-  position: relative;
-  width: 56px;
-  height: 56px;
-  cursor: grab;
-  transition: transform 220ms cubic-bezier(0.34, 1.32, 0.64, 1);
-}
-
-.fb-root.is-hover {
-  transform: scale(1.06);
-}
-
-.fb-root.is-pressed {
-  cursor: grabbing;
-  transform: scale(0.94);
-}
-
-/* 外层柔光 —— 静态、克制 */
-.fb-glow {
-  position: absolute;
-  inset: -10px;
-  border-radius: 22px;
-  background: radial-gradient(
-    circle at 50% 60%,
-    rgba(99, 102, 241, 0.45) 0%,
-    rgba(99, 102, 241, 0.15) 40%,
-    transparent 70%
-  );
-  filter: blur(8px);
-  opacity: 0.7;
-  pointer-events: none;
-  animation: fb-breathe 3.6s ease-in-out infinite;
-}
-
-@keyframes fb-breathe {
-  0%, 100% { opacity: 0.55; transform: scale(0.96); }
-  50% { opacity: 0.85; transform: scale(1.04); }
-}
-
-.fb-root.is-hover .fb-glow {
-  opacity: 1;
-  background: radial-gradient(
-    circle at 50% 60%,
-    rgba(129, 140, 248, 0.6) 0%,
-    rgba(99, 102, 241, 0.2) 45%,
-    transparent 75%
-  );
-}
-
-/* 玻璃主体 —— 圆角方形、深色磨砂 */
-.fb-glass {
+/* 黑色胶囊主体，紧凑态 48×48，展开态 200×56 */
+.fb-island {
   position: relative;
   width: 100%;
   height: 100%;
-  border-radius: 16px;
-  background:
-    linear-gradient(155deg, rgba(28, 32, 56, 0.92) 0%, rgba(15, 18, 36, 0.96) 100%);
-  box-shadow:
-    0 12px 32px rgba(0, 0, 0, 0.55),
-    0 2px 6px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.6);
+  background: #050507;
+  border-radius: 999px;
+  cursor: grab;
+  display: flex;
+  align-items: center;
   overflow: hidden;
+  padding: 0 12px;
+  /* spring 形变 + 内容渐入 */
+  transition:
+    background 200ms ease,
+    box-shadow 280ms cubic-bezier(0.34, 1.4, 0.64, 1);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.6),
+    0 2px 8px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
-/* 玻璃顶部高光带 —— 静态、模拟玻璃厚度 */
-.fb-glass::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 8%;
-  right: 8%;
-  height: 40%;
-  border-radius: 16px 16px 50% 50% / 16px 16px 100% 100%;
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.12) 0%,
-    transparent 100%
-  );
-  pointer-events: none;
+.fb-island.is-pressed {
+  cursor: grabbing;
+  background: #0c0c10;
+  transform: scale(0.96);
 }
 
-/* 边缘霓虹描边 —— 双层模拟玻璃折射 */
-.fb-edge {
-  position: absolute;
-  inset: 0;
-  border-radius: 16px;
-  padding: 1px;
-  background: linear-gradient(
-    155deg,
-    rgba(129, 140, 248, 0.55) 0%,
-    rgba(99, 102, 241, 0.15) 35%,
-    rgba(192, 132, 252, 0.1) 70%,
-    rgba(236, 72, 153, 0.4) 100%
-  );
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
+.fb-island.is-expanded {
+  background: linear-gradient(135deg, #0a0a10 0%, #14101e 100%);
+  box-shadow:
+    0 14px 40px rgba(0, 0, 0, 0.7),
+    0 4px 16px rgba(99, 102, 241, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
-/* 内容区 —— 极简 prompt 符号 */
-.fb-content {
-  position: absolute;
-  inset: 0;
+/* 图标区：紧凑态居中，展开态固定左侧 */
+.fb-icon {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2;
+  margin-left: 0;
+  transition: margin 280ms cubic-bezier(0.34, 1.4, 0.64, 1);
 }
 
+.fb-island.is-expanded .fb-icon {
+  margin-left: 4px;
+}
+
+/* 中央活力小点 —— 类似 iPhone 灵动岛中央传感器 */
+.fb-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #ec4899);
+  box-shadow: 0 0 10px rgba(236, 72, 153, 0.7);
+  opacity: 1;
+  transition: opacity 200ms ease, transform 280ms cubic-bezier(0.34, 1.4, 0.64, 1);
+  z-index: 1;
+}
+
+.fb-island.is-expanded .fb-dot {
+  opacity: 0;
+  transform: scale(0.4);
+}
+
+/* 展开态显示 prompt 符号 */
 .fb-prompt {
   font-family: 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: -1px;
-  background: linear-gradient(135deg, #c7d2fe 0%, #a5b4fc 50%, #f0abfc 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 6px rgba(165, 180, 252, 0.55));
-  transition: filter 220ms ease;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: #ec4899;
+  opacity: 0;
+  transform: scale(0.4);
+  transition: opacity 200ms ease 80ms, transform 280ms cubic-bezier(0.34, 1.4, 0.64, 1) 80ms;
+  text-shadow: 0 0 12px rgba(236, 72, 153, 0.7);
 }
 
-.fb-root.is-hover .fb-prompt {
-  filter: drop-shadow(0 0 10px rgba(192, 132, 252, 0.85));
+.fb-island.is-expanded .fb-prompt {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* 文字区 —— 仅展开时显示 */
+.fb-label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-left: 12px;
+  min-width: 0;
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: opacity 200ms ease 100ms, transform 260ms cubic-bezier(0.34, 1.32, 0.64, 1) 100ms;
+  pointer-events: none;
+}
+
+.fb-island.is-expanded .fb-label {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.fb-label-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f8fafc;
+  letter-spacing: 0.2px;
+  line-height: 1.2;
+}
+
+.fb-label-sub {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(248, 250, 252, 0.55);
+  line-height: 1.2;
+  margin-top: 1px;
 }

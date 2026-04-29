@@ -6,7 +6,12 @@ import { readFileSync, existsSync } from 'fs';
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
-const BUTTON_SIZE = 72;
+// 灵动岛尺寸：紧凑态、展开态
+const COMPACT_W = 48;
+const COMPACT_H = 48;
+const EXPANDED_W = 220;
+const EXPANDED_H = 56;
+const BUTTON_SIZE = Math.max(EXPANDED_W, EXPANDED_H); // 用于位置 clamp 的最大边界
 
 interface PersistState {
   x?: number;
@@ -46,7 +51,7 @@ export class FloatingButtonManager {
     });
   }
 
-  private clampToDisplay(x: number, y: number): { x: number; y: number } {
+  private clampToDisplay(x: number, y: number, w: number = BUTTON_SIZE, h: number = BUTTON_SIZE): { x: number; y: number } {
     // 找到最接近的显示器，把按钮限制在可见区内
     const displays = screen.getAllDisplays();
     const target =
@@ -56,8 +61,8 @@ export class FloatingButtonManager {
       }) ?? screen.getPrimaryDisplay();
 
     const { x: dx, y: dy, width, height } = target.workArea;
-    const clampedX = Math.max(dx, Math.min(x, dx + width - BUTTON_SIZE));
-    const clampedY = Math.max(dy, Math.min(y, dy + height - BUTTON_SIZE));
+    const clampedX = Math.max(dx, Math.min(x, dx + width - w));
+    const clampedY = Math.max(dy, Math.min(y, dy + height - h));
     return { x: clampedX, y: clampedY };
   }
 
@@ -75,8 +80,9 @@ export class FloatingButtonManager {
     );
 
     this.window = new BrowserWindow({
-      width: BUTTON_SIZE,
-      height: BUTTON_SIZE,
+      // 默认紧凑态；hover 时通过 setExpanded(true) 形变展开
+      width: COMPACT_W,
+      height: COMPACT_H,
       x,
       y,
       frame: false,
@@ -171,6 +177,19 @@ export class FloatingButtonManager {
     const [x, y] = this.window.getPosition();
     this.saveState({ x, y });
     this.dragOrigin = null;
+  }
+
+  /** 灵动岛展开/收缩：保持中心点不变，避免视觉跳跃 */
+  setExpanded(expanded: boolean) {
+    if (!this.window || this.window.isDestroyed() || this.dragOrigin) return;
+    const w = expanded ? EXPANDED_W : COMPACT_W;
+    const h = expanded ? EXPANDED_H : COMPACT_H;
+    const [curX, curY] = this.window.getPosition();
+    const [curW, curH] = this.window.getSize();
+    const newX = Math.round(curX + (curW - w) / 2);
+    const newY = Math.round(curY + (curH - h) / 2);
+    const clamped = this.clampToDisplay(newX, newY, w, h);
+    this.window.setBounds({ x: clamped.x, y: clamped.y, width: w, height: h }, false);
   }
 
   isVisible(): boolean {

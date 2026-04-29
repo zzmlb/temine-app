@@ -139,6 +139,9 @@ export function registerIpcHandlers(services: Services) {
   ipcMain.on(IPC_CHANNELS.FLOATING_BUTTON_DRAG_END, () => {
     floatingButtonManager.dragEnd();
   });
+  ipcMain.on(IPC_CHANNELS.FLOATING_BUTTON_EXPAND, (_event, expanded: boolean) => {
+    floatingButtonManager.setExpanded(!!expanded);
+  });
 
   // 设置
   ipcMain.handle(IPC_CHANNELS.SETTINGS_GET, async () => {

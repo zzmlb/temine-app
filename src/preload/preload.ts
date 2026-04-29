@@ -90,6 +90,7 @@ const floatingButtonAPI = {
   dragStart: () => ipcRenderer.send(IPC_CHANNELS.FLOATING_BUTTON_DRAG_START),
   dragMove: () => ipcRenderer.send(IPC_CHANNELS.FLOATING_BUTTON_DRAG_MOVE),
   dragEnd: () => ipcRenderer.send(IPC_CHANNELS.FLOATING_BUTTON_DRAG_END),
+  expand: (expanded: boolean) => ipcRenderer.send(IPC_CHANNELS.FLOATING_BUTTON_EXPAND, expanded),
 };
 
 contextBridge.exposeInMainWorld('terminalAPI', terminalAPI);
