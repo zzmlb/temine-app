@@ -85,6 +85,11 @@ app.whenReady().then(() => {
   // 默认显示悬浮按钮（除非用户上次手动隐藏）
   floatingButtonManager.restore();
 
+  // 启动时自动打开控制面板（这是用户主要看到的界面）
+  panelManager.toggle().catch(() => {
+    // 启动失败不影响其他模块
+  });
+
   // 注册 IPC 处理器
   registerIpcHandlers({
     ptyManager,
@@ -221,9 +226,16 @@ app.whenReady().then(() => {
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
 
-  // 点击 Dock 图标：唤出终端管理器主窗口（这是用户主动需要时才显示）
+  // 点击 Dock 图标：聚焦控制面板，并确保悬浮按钮在
   app.on('activate', () => {
-    showMainWindow();
+    floatingButtonManager.show();
+    const panelWin = panelManager.getWindow();
+    if (panelWin && !panelWin.isDestroyed()) {
+      panelWin.show();
+      panelWin.focus();
+    } else {
+      panelManager.toggle().catch(() => {});
+    }
   });
 });
 
