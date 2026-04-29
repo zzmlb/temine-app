@@ -68,6 +68,19 @@ function showMainWindow() {
   }
 }
 
+function toggleMainWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    createMainWindow(true);
+    return;
+  }
+  if (mainWindow.isVisible()) {
+    mainWindow.hide();
+  } else {
+    mainWindow.show();
+    mainWindow.focus();
+  }
+}
+
 app.whenReady().then(() => {
   // 初始化核心服务
   ptyManager = new PtyManager();
@@ -101,6 +114,7 @@ app.whenReady().then(() => {
     sessionLogger,
     panelManager,
     getMainWindow: () => mainWindow,
+    toggleMainWindow,
   });
 
   // 连接 PTY 输出到 AI 检测器和记录器

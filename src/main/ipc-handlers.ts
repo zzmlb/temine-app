@@ -21,6 +21,7 @@ interface Services {
   sessionLogger: SessionLogger;
   panelManager: PanelManager;
   getMainWindow: () => BrowserWindow | null;
+  toggleMainWindow: () => void;
 }
 
 export function registerIpcHandlers(services: Services) {
@@ -31,6 +32,7 @@ export function registerIpcHandlers(services: Services) {
     floatingBarManager,
     floatingButtonManager,
     panelManager,
+    toggleMainWindow,
   } = services;
 
   // 创建终端
@@ -139,8 +141,26 @@ export function registerIpcHandlers(services: Services) {
   ipcMain.on(IPC_CHANNELS.FLOATING_BUTTON_DRAG_END, () => {
     floatingButtonManager.dragEnd();
   });
-  ipcMain.on(IPC_CHANNELS.FLOATING_BUTTON_EXPAND, (_event, expanded: boolean) => {
-    floatingButtonManager.setExpanded(!!expanded);
+  ipcMain.on(IPC_CHANNELS.FLOATING_BUTTON_EXPAND, (_event, expanded: boolean, w?: number, h?: number) => {
+    const safeW = typeof w === 'number' && w > 0 && w < 1000 ? w : undefined;
+    const safeH = typeof h === 'number' && h > 0 && h < 1000 ? h : undefined;
+    floatingButtonManager.setExpanded(!!expanded, safeW, safeH);
+  });
+
+  // 灵动岛动作分发：按钮点击 → 触发对应主进程操作
+  ipcMain.on(IPC_CHANNELS.FLOATING_BUTTON_ACTION, (_event, action: string) => {
+    switch (action) {
+      case 'panel':
+        panelManager.toggle().catch(() => {});
+        break;
+      case 'manager':
+        toggleMainWindow();
+        break;
+      case 'hide':
+        floatingButtonManager.hide();
+        break;
+      // 后续要加新按钮在这里加 case
+    }
   });
 
   // 设置

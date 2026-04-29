@@ -1,6 +1,64 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 const DRAG_THRESHOLD = 4;
+
+// 按钮配置：后续要加新按钮，只需在这里加一项 + 主进程在 dispatch 里加一个 case
+interface IslandButton {
+  id: string;
+  /** 按钮内显示的 SVG 路径或文字 */
+  glyph: React.ReactNode;
+  /** 鼠标悬停 tooltip */
+  title: string;
+  /** 点击时发到主进程的动作名 */
+  action: string;
+}
+
+const BUTTONS: IslandButton[] = [
+  {
+    id: 'panel',
+    title: '打开/关闭控制面板',
+    action: 'panel',
+    glyph: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="4" width="18" height="16" rx="2" />
+        <path d="M7 9l3 3-3 3" />
+        <path d="M13 15h4" />
+      </svg>
+    ),
+  },
+  {
+    id: 'manager',
+    title: '打开/隐藏终端管理器',
+    action: 'manager',
+    glyph: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="8" height="8" rx="1.5" />
+        <rect x="13" y="3" width="8" height="8" rx="1.5" />
+        <rect x="3" y="13" width="8" height="8" rx="1.5" />
+        <rect x="13" y="13" width="8" height="8" rx="1.5" />
+      </svg>
+    ),
+  },
+  {
+    id: 'hide',
+    title: '隐藏灵动岛',
+    action: 'hide',
+    glyph: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+        <path d="M5 12h14" />
+      </svg>
+    ),
+  },
+];
+
+// 紧凑态：48×48 圆胶囊；展开态：宽度由按钮数计算（padding + 按钮数*36 + 间距）
+const COMPACT_W = 48;
+const COMPACT_H = 48;
+const BUTTON_SIZE = 32;
+const BUTTON_GAP = 6;
+const ISLAND_PADDING = 10;
+const EXPANDED_W = ISLAND_PADDING * 2 + BUTTONS.length * BUTTON_SIZE + (BUTTONS.length - 1) * BUTTON_GAP;
+const EXPANDED_H = 52;
 
 const FloatingButton: React.FC = () => {
   const [pressed, setPressed] = useState(false);
@@ -11,9 +69,15 @@ const FloatingButton: React.FC = () => {
     moved: boolean;
     active: boolean;
   } | null>(null);
+  // 防止 mouseleave 触发收缩时鼠标其实还在窗口内（窗口变小了）
+  const expandTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     document.body.classList.add('floating-button-body');
+    document.documentElement.style.setProperty('--fb-expanded-w', `${EXPANDED_W}px`);
+    document.documentElement.style.setProperty('--fb-expanded-h', `${EXPANDED_H}px`);
+    document.documentElement.style.setProperty('--fb-compact-w', `${COMPACT_W}px`);
+    document.documentElement.style.setProperty('--fb-compact-h', `${COMPACT_H}px`);
     return () => {
       document.body.classList.remove('floating-button-body');
     };
@@ -40,7 +104,8 @@ const FloatingButton: React.FC = () => {
       if (state.moved) {
         window.floatingButtonAPI.dragEnd();
       } else {
-        window.floatingButtonAPI.click();
+        // 紧凑态点击 = 默认动作（切控制面板）
+        window.floatingButtonAPI.action('panel');
       }
 
       dragStateRef.current = null;
@@ -55,19 +120,27 @@ const FloatingButton: React.FC = () => {
     };
   }, []);
 
-  // 鼠标悬停时展开窗口（通过主进程 setBounds 形变）
-  const handleMouseEnter = () => {
-    setExpanded(true);
-    window.floatingButtonAPI.expand(true);
+  const expandedSize = useMemo(() => ({ w: EXPANDED_W, h: EXPANDED_H }), []);
+
+  const triggerExpand = (next: boolean) => {
+    if (expandTimerRef.current !== null) {
+      window.clearTimeout(expandTimerRef.current);
+      expandTimerRef.current = null;
+    }
+    setExpanded(next);
+    window.floatingButtonAPI.expand(next, next ? expandedSize.w : COMPACT_W, next ? expandedSize.h : COMPACT_H);
   };
 
+  const handleMouseEnter = () => triggerExpand(true);
   const handleMouseLeave = () => {
-    setExpanded(false);
-    window.floatingButtonAPI.expand(false);
+    // 短延迟，避免 setBounds 形变时鼠标暂时跨越边界
+    expandTimerRef.current = window.setTimeout(() => triggerExpand(false), 120);
   };
 
+  // 紧凑态拖拽：仅当未展开时按下才启动拖拽（避免拖拽和点按钮冲突）
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return;
+    if (expanded) return; // 展开态由各按钮自己处理
     dragStateRef.current = {
       startX: e.screenX,
       startY: e.screenY,
@@ -80,7 +153,12 @@ const FloatingButton: React.FC = () => {
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
-    window.floatingButtonAPI.hide();
+    window.floatingButtonAPI.action('hide');
+  };
+
+  const handleButtonClick = (e: React.MouseEvent, action: string) => {
+    e.stopPropagation();
+    window.floatingButtonAPI.action(action);
   };
 
   return (
@@ -90,15 +168,25 @@ const FloatingButton: React.FC = () => {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onContextMenu={handleContextMenu}
-      title="点击：开/关控制面板\n拖动：移动\n右键：隐藏"
     >
-      <div className="fb-icon">
-        <span className="fb-dot" />
-        <span className="fb-prompt">›_</span>
-      </div>
-      <div className="fb-label">
-        <span className="fb-label-title">Temine</span>
-        <span className="fb-label-sub">点击打开面板</span>
+      {/* 紧凑态中央光点（展开后淡出） */}
+      <div className="fb-dot" />
+
+      {/* 展开态按钮槽 */}
+      <div className="fb-buttons" aria-hidden={!expanded}>
+        {BUTTONS.map((b) => (
+          <button
+            key={b.id}
+            type="button"
+            className={`fb-btn fb-btn-${b.id}`}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => handleButtonClick(e, b.action)}
+            title={b.title}
+            tabIndex={expanded ? 0 : -1}
+          >
+            {b.glyph}
+          </button>
+        ))}
       </div>
     </div>
   );

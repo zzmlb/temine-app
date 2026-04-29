@@ -39,6 +39,7 @@ export const IPC_CHANNELS = {
   FLOATING_BUTTON_DRAG_END: 'floatingButton:dragEnd',
   FLOATING_BUTTON_HIDE: 'floatingButton:hide',
   FLOATING_BUTTON_EXPAND: 'floatingButton:expand',
+  FLOATING_BUTTON_ACTION: 'floatingButton:action',
   HISTORY_SEARCH: 'history:search',
   HISTORY_TIMELINE: 'history:getTimeline',
   HISTORY_EXPORT: 'history:export',

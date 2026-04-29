@@ -179,11 +179,11 @@ export class FloatingButtonManager {
     this.dragOrigin = null;
   }
 
-  /** 灵动岛展开/收缩：保持中心点不变，避免视觉跳跃 */
-  setExpanded(expanded: boolean) {
+  /** 灵动岛展开/收缩：保持中心点不变，避免视觉跳跃。可传动态尺寸（前端按按钮数计算） */
+  setExpanded(expanded: boolean, customW?: number, customH?: number) {
     if (!this.window || this.window.isDestroyed() || this.dragOrigin) return;
-    const w = expanded ? EXPANDED_W : COMPACT_W;
-    const h = expanded ? EXPANDED_H : COMPACT_H;
+    const w = expanded ? (customW ?? EXPANDED_W) : COMPACT_W;
+    const h = expanded ? (customH ?? EXPANDED_H) : COMPACT_H;
     const [curX, curY] = this.window.getPosition();
     const [curW, curH] = this.window.getSize();
     const newX = Math.round(curX + (curW - w) / 2);
