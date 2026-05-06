@@ -73,6 +73,8 @@ const FloatingButton: React.FC = () => {
   } | null>(null);
   // 防止 mouseleave 触发收缩时鼠标其实还在窗口内（窗口变小了）
   const expandTimerRef = useRef<number | null>(null);
+  // dragMove IPC 用 rAF 节流，避免每帧 mousemove 都打主进程
+  const dragRafRef = useRef<number | null>(null);
 
   useEffect(() => {
     document.body.classList.add('floating-button-body');
@@ -86,39 +88,70 @@ const FloatingButton: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // 强制结束当前 drag：用于"鼠标已松开但 mouseup 丢失"的兜底
+    const finishDrag = (state: { moved: boolean }, asClick: boolean) => {
+      if (state.moved) {
+        window.floatingButtonAPI.dragEnd();
+      } else if (asClick) {
+        // 紧凑态点击 = 默认动作（切控制面板）
+        window.floatingButtonAPI.action('panel');
+      }
+      if (dragRafRef.current !== null) {
+        cancelAnimationFrame(dragRafRef.current);
+        dragRafRef.current = null;
+      }
+      dragStateRef.current = null;
+      setPressed(false);
+    };
+
     const onMove = (e: MouseEvent) => {
       const state = dragStateRef.current;
       if (!state || !state.active) return;
+
+      // 兜底：mousemove 时按钮已松开 → 说明 mouseup 在窗口外丢了（浏览器/其他窗口抢焦点的常见场景）
+      // 不主动派发 click 动作（鼠标早就抬起，再触发 toggle 会闪烁）
+      if (e.buttons === 0) {
+        finishDrag(state, false);
+        return;
+      }
+
       const dx = Math.abs(e.screenX - state.startX);
       const dy = Math.abs(e.screenY - state.startY);
       if (!state.moved && (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD)) {
         state.moved = true;
       }
-      if (state.moved) {
-        window.floatingButtonAPI.dragMove();
+      // rAF 节流：每帧最多 1 次 IPC，避免把主进程打爆
+      if (state.moved && dragRafRef.current === null) {
+        dragRafRef.current = requestAnimationFrame(() => {
+          dragRafRef.current = null;
+          window.floatingButtonAPI.dragMove();
+        });
       }
     };
 
     const onUp = () => {
       const state = dragStateRef.current;
       if (!state || !state.active) return;
+      finishDrag(state, true);
+    };
 
-      if (state.moved) {
-        window.floatingButtonAPI.dragEnd();
-      } else {
-        // 紧凑态点击 = 默认动作（切控制面板）
-        window.floatingButtonAPI.action('panel');
-      }
-
-      dragStateRef.current = null;
-      setPressed(false);
+    // 切窗口/最小化等情况也强制清理，避免 state 泄漏
+    const onBlur = () => {
+      const state = dragStateRef.current;
+      if (state && state.active) finishDrag(state, false);
     };
 
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
+    window.addEventListener('blur', onBlur);
     return () => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('blur', onBlur);
+      if (dragRafRef.current !== null) {
+        cancelAnimationFrame(dragRafRef.current);
+        dragRafRef.current = null;
+      }
     };
   }, []);
 
