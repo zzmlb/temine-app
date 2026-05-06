@@ -63,6 +63,8 @@ const EXPANDED_H = 52;
 const FloatingButton: React.FC = () => {
   const [pressed, setPressed] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  // expanded 的 ref 镜像：用于事件回调里同步读取，避免闭包旧值导致重复 IPC
+  const expandedRef = useRef(false);
   const dragStateRef = useRef<{
     startX: number;
     startY: number;
@@ -127,14 +129,30 @@ const FloatingButton: React.FC = () => {
       window.clearTimeout(expandTimerRef.current);
       expandTimerRef.current = null;
     }
+    // 已经是目标状态：跳过 IPC 与 setBounds，掐死 hover/leave 抖动循环
+    if (expandedRef.current === next) return;
+    expandedRef.current = next;
     setExpanded(next);
     window.floatingButtonAPI.expand(next, next ? expandedSize.w : COMPACT_W, next ? expandedSize.h : COMPACT_H);
   };
 
-  const handleMouseEnter = () => triggerExpand(true);
+  // enter 也加去抖：避免鼠标只是"扫过"区域就触发展开
+  const handleMouseEnter = () => {
+    if (expandTimerRef.current !== null) {
+      window.clearTimeout(expandTimerRef.current);
+      expandTimerRef.current = null;
+    }
+    if (expandedRef.current) return;
+    expandTimerRef.current = window.setTimeout(() => triggerExpand(true), 60);
+  };
   const handleMouseLeave = () => {
+    if (expandTimerRef.current !== null) {
+      window.clearTimeout(expandTimerRef.current);
+      expandTimerRef.current = null;
+    }
+    if (!expandedRef.current) return;
     // 短延迟，避免 setBounds 形变时鼠标暂时跨越边界
-    expandTimerRef.current = window.setTimeout(() => triggerExpand(false), 120);
+    expandTimerRef.current = window.setTimeout(() => triggerExpand(false), 160);
   };
 
   // 紧凑态拖拽：仅当未展开时按下才启动拖拽（避免拖拽和点按钮冲突）

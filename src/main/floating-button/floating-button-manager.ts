@@ -186,6 +186,8 @@ export class FloatingButtonManager {
     const h = expanded ? (customH ?? EXPANDED_H) : COMPACT_H;
     const [curX, curY] = this.window.getPosition();
     const [curW, curH] = this.window.getSize();
+    // 已经是目标尺寸：跳过 setBounds，避免 hover 边界抖动时反复重排卡死渲染线程
+    if (curW === w && curH === h) return;
     const newX = Math.round(curX + (curW - w) / 2);
     const newY = Math.round(curY + (curH - h) / 2);
     const clamped = this.clampToDisplay(newX, newY, w, h);
