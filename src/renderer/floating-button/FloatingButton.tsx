@@ -119,6 +119,8 @@ const FloatingButton: React.FC = () => {
       const dy = Math.abs(e.screenY - state.startY);
       if (!state.moved && (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD)) {
         state.moved = true;
+        // 惰性触发：真的越过阈值才通知主进程，避免单击场景为不会发生的拖拽白做一次同步 X11 调用
+        window.floatingButtonAPI.dragStart();
       }
       // rAF 节流：每帧最多 1 次 IPC，避免把主进程打爆
       if (state.moved && dragRafRef.current === null) {
@@ -189,6 +191,10 @@ const FloatingButton: React.FC = () => {
   };
 
   // 紧凑态拖拽：仅当未展开时按下才启动拖拽（避免拖拽和点按钮冲突）
+  // 注意：这里不立即调用 dragStart IPC——主进程的 dragStart 会跑同步 X11 调用
+  // (getPosition + getCursorScreenPoint)，X server 繁忙时（比如开着 AdsPower 一堆 Chrome）
+  // 单次调用可能阻塞数百毫秒，导致单击场景"一点就转圈"。
+  // 真正越过 DRAG_THRESHOLD 后再在 onMove 里发 dragStart。
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return;
     if (expanded) return; // 展开态由各按钮自己处理
@@ -199,7 +205,6 @@ const FloatingButton: React.FC = () => {
       active: true,
     };
     setPressed(true);
-    window.floatingButtonAPI.dragStart();
   };
 
   const handleContextMenu = (e: React.MouseEvent) => {
