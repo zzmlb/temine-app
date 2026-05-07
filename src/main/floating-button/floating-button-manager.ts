@@ -6,12 +6,11 @@ import { readFileSync, existsSync } from 'fs';
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
-// 灵动岛尺寸：紧凑态、展开态
-const COMPACT_W = 48;
-const COMPACT_H = 48;
-const EXPANDED_W = 220;
-const EXPANDED_H = 56;
-const BUTTON_SIZE = Math.max(EXPANDED_W, EXPANDED_H); // 用于位置 clamp 的最大边界
+// 灵动岛固定尺寸（与渲染端 FloatingButton.tsx 的 ISLAND_W/H 保持一致）
+// 不再有 hover 形变 / setBounds，固定展开态以彻底消除频繁 setBounds 引起的卡死
+const ISLAND_W = 162;
+const ISLAND_H = 48;
+const BUTTON_SIZE = Math.max(ISLAND_W, ISLAND_H); // 用于位置 clamp 的最大边界
 
 interface PersistState {
   x?: number;
@@ -80,9 +79,9 @@ export class FloatingButtonManager {
     );
 
     this.window = new BrowserWindow({
-      // 默认紧凑态；hover 时通过 setExpanded(true) 形变展开
-      width: COMPACT_W,
-      height: COMPACT_H,
+      // 固定尺寸，不再有 hover 形变
+      width: ISLAND_W,
+      height: ISLAND_H,
       x,
       y,
       frame: false,
@@ -179,19 +178,9 @@ export class FloatingButtonManager {
     this.dragOrigin = null;
   }
 
-  /** 灵动岛展开/收缩：保持中心点不变，避免视觉跳跃。可传动态尺寸（前端按按钮数计算） */
-  setExpanded(expanded: boolean, customW?: number, customH?: number) {
-    if (!this.window || this.window.isDestroyed() || this.dragOrigin) return;
-    const w = expanded ? (customW ?? EXPANDED_W) : COMPACT_W;
-    const h = expanded ? (customH ?? EXPANDED_H) : COMPACT_H;
-    const [curX, curY] = this.window.getPosition();
-    const [curW, curH] = this.window.getSize();
-    // 已经是目标尺寸：跳过 setBounds，避免 hover 边界抖动时反复重排卡死渲染线程
-    if (curW === w && curH === h) return;
-    const newX = Math.round(curX + (curW - w) / 2);
-    const newY = Math.round(curY + (curH - h) / 2);
-    const clamped = this.clampToDisplay(newX, newY, w, h);
-    this.window.setBounds({ x: clamped.x, y: clamped.y, width: w, height: h }, false);
+  /** 兼容旧 IPC 通道 expand：固定展开态后已无操作 */
+  setExpanded(_expanded: boolean, _customW?: number, _customH?: number): void {
+    // no-op：渲染端已不再调用 expand IPC，但保留方法签名以防外部路径误调
   }
 
   isVisible(): boolean {
