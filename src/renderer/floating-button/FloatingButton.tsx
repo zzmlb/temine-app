@@ -160,6 +160,7 @@ const FloatingButton: React.FC = () => {
   };
 
   const handleButtonClick = (action: string) => {
+    console.log(`[FB-renderer] click action=${action} at ${performance.now().toFixed(0)}ms`);
     window.floatingButtonAPI.action(action);
   };
 

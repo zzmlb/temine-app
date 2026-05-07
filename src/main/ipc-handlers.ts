@@ -149,9 +149,11 @@ export function registerIpcHandlers(services: Services) {
 
   // 灵动岛动作分发：按钮点击 → 触发对应主进程操作
   ipcMain.on(IPC_CHANNELS.FLOATING_BUTTON_ACTION, (_event, action: string) => {
+    const t0 = Date.now();
+    console.log(`[FB] action received: ${action} at ${new Date().toISOString()}`);
     switch (action) {
       case 'panel':
-        panelManager.toggle().catch(() => {});
+        panelManager.toggle().catch((err) => console.error('[FB] panel toggle failed:', err));
         break;
       case 'manager':
         toggleMainWindow();
@@ -161,6 +163,8 @@ export function registerIpcHandlers(services: Services) {
         break;
       // 后续要加新按钮在这里加 case
     }
+    const dt = Date.now() - t0;
+    if (dt > 30) console.warn(`[FB] action ${action} sync part took ${dt}ms`);
   });
 
   // 设置

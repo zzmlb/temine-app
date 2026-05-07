@@ -117,6 +117,17 @@ export class FloatingButtonManager {
     this.window.on('closed', () => {
       this.window = null;
     });
+
+    // 诊断：让 Electron 直接告诉我们灵动岛 webContents 是否卡死
+    this.window.webContents.on('unresponsive', () => {
+      console.error(`[FB] webContents UNRESPONSIVE at ${new Date().toISOString()}`);
+    });
+    this.window.webContents.on('responsive', () => {
+      console.warn(`[FB] webContents responsive again at ${new Date().toISOString()}`);
+    });
+    this.window.webContents.on('render-process-gone', (_e, details) => {
+      console.error(`[FB] render-process-gone:`, details);
+    });
   }
 
   show() {
@@ -149,6 +160,7 @@ export class FloatingButtonManager {
 
   dragStart() {
     if (!this.window || this.window.isDestroyed()) return;
+    const t0 = Date.now();
     const [winX, winY] = this.window.getPosition();
     const cursor = screen.getCursorScreenPoint();
     this.dragOrigin = {
@@ -157,15 +169,20 @@ export class FloatingButtonManager {
       cursorX: cursor.x,
       cursorY: cursor.y,
     };
+    const dt = Date.now() - t0;
+    if (dt > 30) console.warn(`[FB] dragStart slow: ${dt}ms (getPosition+getCursorScreenPoint)`);
   }
 
   dragMove() {
     if (!this.window || this.window.isDestroyed() || !this.dragOrigin) return;
+    const t0 = Date.now();
     const cursor = screen.getCursorScreenPoint();
     const dx = cursor.x - this.dragOrigin.cursorX;
     const dy = cursor.y - this.dragOrigin.cursorY;
     const next = this.clampToDisplay(this.dragOrigin.winX + dx, this.dragOrigin.winY + dy);
     this.window.setPosition(next.x, next.y, false);
+    const dt = Date.now() - t0;
+    if (dt > 30) console.warn(`[FB] dragMove slow: ${dt}ms`);
   }
 
   dragEnd() {
@@ -173,9 +190,12 @@ export class FloatingButtonManager {
       this.dragOrigin = null;
       return;
     }
+    const t0 = Date.now();
     const [x, y] = this.window.getPosition();
     this.saveState({ x, y });
     this.dragOrigin = null;
+    const dt = Date.now() - t0;
+    if (dt > 30) console.warn(`[FB] dragEnd slow: ${dt}ms`);
   }
 
   /** 兼容旧 IPC 通道 expand：固定展开态后已无操作 */
